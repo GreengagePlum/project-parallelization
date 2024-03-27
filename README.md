@@ -6,6 +6,8 @@ Il s'agira de paralléliser un code de génération des ensembles fractals
 de Julia, célèbre mathématicien français du début du 20ème siècle.
 
 Le code de départ que vous devrez paralléliser vous est donné sur ce git.
+Utilisez le serveur discord (le lien d'inscription est sur la page moodle)
+pour poser vos questions éventuelles.
 
 ## Parallélisation naïve en OpenMP
 
