@@ -15,11 +15,11 @@
 // - base_medium: medium run (0.28), whole set hi-res, huge imbalance
 //    ./julia 8000 6000 0.5 0 0 1000
 // - horse_head_medium: medium run (1.38), larger image
-//    ./julia 8000 6000 25. .6 0.29 1000; open fractal.bmp
+//    ./julia 8000 6000 25. .6 0.29 1000
 // - nice spiral: large run (4.0), large image
 //    ./julia 8000 6000 1e12 -0.07110516009 0.8867120524212 3000
-// - horse_head_detail: large run (3.21), large image, huge imbalance
-//    ./julia 8000 6000 25. .6 0.29 1000; open fractal.bmp
+// - horse_head_detail: large run (3.21), large image, large imbalance
+//    ./julia 8000 6000 1500000. .5903 0.28002 2000
 // - orange_large: large run (4.2), medium image, more iterations
 //    ./julia 3000 2000 4e10 -.48429274835 0.1372305145 4500
 // - orange_huge: huge run (34.3), even larger image
