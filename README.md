@@ -71,7 +71,7 @@ disponibles sur le noeud : `mpirun --map-by ppr:1:node`
 
 ## Barême
 
-* 5/20 : fonctionnement en parallèle de vorte solution (OpenMP+MPI)
+* 5/20 : fonctionnement en parallèle de votre solution (OpenMP+MPI)
 * 5/20 : équilibrage de charge et performance de votre solution (voir ci-dessus pour une référence)
 * 5/20 : rapport et mesures de performance
 * 5/20 : élégance et simplicité de votre solution.
