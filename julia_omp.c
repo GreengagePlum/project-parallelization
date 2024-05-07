@@ -153,15 +153,32 @@ int main(int argc, char **argv)
   // Compute
   double t1 = omp_get_wtime();
 
-#pragma omp parallel for schedule(dynamic)
-  for (int y = 0; y < HEIGHT; y++)
+#pragma omp parallel
   {
-    for (int x = 0; x < WIDTH; x++)
+    int num_threads = omp_get_num_threads();
+    int thread_id = omp_get_thread_num();
+
+    int block_size = HEIGHT / num_threads; // Blocs verticaux
+    int start_y = thread_id * block_size;
+    int end_y;
+    if (thread_id == num_threads - 1)
     {
-      double zx = 1.5 * ((double)x - WIDTH / 2.) / (0.5 * zoom * WIDTH) + moveX;
-      double zy = ((double)y - HEIGHT / 2.) / (0.5 * zoom * HEIGHT) + moveY;
-      Pixel color = julia_set(zx, zy, cReal, cImag, max_iterations);
-      image[y * WIDTH + x] = color;
+      end_y = HEIGHT; // Pour le dernier thread, aller jusqu'à la fin de l'image.
+    }
+    else
+    {
+      end_y = start_y + block_size; // Pour les autres threads, utiliser la taille de bloc standard.
+    }
+
+    for (int y = start_y; y < end_y; y++)
+    {
+      for (int x = 0; x < WIDTH; x++)
+      {
+        double zx = 1.5 * ((double)x - WIDTH / 2.) / (0.5 * zoom * WIDTH) + moveX;
+        double zy = ((double)y - HEIGHT / 2.) / (0.5 * zoom * HEIGHT) + moveY;
+        Pixel color = julia_set(zx, zy, cReal, cImag, max_iterations);
+        image[y * WIDTH + x] = color;
+      }
     }
   }
 
