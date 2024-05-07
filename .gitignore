@@ -58,4 +58,7 @@ dkms.conf
 # End of https://www.toptal.com/developers/gitignore/api/c
 
 julia
+julia_omp
+julia_mpi_omp
 compile_flags.txt
+fractal.bmp
