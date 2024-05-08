@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <omp.h>
+#include <mpi.h>
 
 int WIDTH, HEIGHT;
 
@@ -117,11 +118,22 @@ void write_bitmap(const char *filename, Pixel *image) {
 
 int main(int argc, char **argv)
 {
+
+  MPI_Init(&argc, &argv);
+
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
   if(argc != 7)
   {
+    if (rank == 0)
+    {
     fprintf(stderr,
       "Usage: %s WIDTH HEIGHT ZOOM MOVE_X MOVE_Y MAX_ITER\n",
       argv[0]);
+    }
+    MPI_Finalize();
     return(1);
   }
   WIDTH = atoi(argv[1]);              // 8000
@@ -138,14 +150,19 @@ int main(int argc, char **argv)
   // Init
   Pixel *image = (Pixel *)malloc(WIDTH * HEIGHT * sizeof(Pixel));
   if (!image) {
+    if (rank == 0)
+    {
     printf("Error: Unable to allocate memory\n");
+    }
+    MPI_Finalize();
     return 1;
   }
 
   // Compute
-  double t1 = omp_get_wtime();
+  double t1 = MPI_Wtime();
 
-  for (int y = 0; y < HEIGHT; y++) {
+#pragma omp parallel for collapse(2) schedule(dynamic)
+  for (int y = rank; y < HEIGHT; y+=size) {
     for (int x = 0; x < WIDTH; x++) {
       double zx = 1.5 * ((double)x - WIDTH / 2.) / (0.5 * zoom * WIDTH) + moveX;
       double zy = ((double)y - HEIGHT / 2.) / (0.5 * zoom * HEIGHT) + moveY;
@@ -154,16 +171,28 @@ int main(int argc, char **argv)
     }
   }
 
-  // Save file
-  double t2 = omp_get_wtime();
+  // Gather image data onto the master process
+  // MPI_Gather(rank == 0 ? MPI_IN_PLACE : image, WIDTH * HEIGHT / size, MPI_UNSIGNED_CHAR, image, WIDTH * HEIGHT / size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+  MPI_Gather(image + rank * (HEIGHT / size) * WIDTH, (HEIGHT / size) * WIDTH * sizeof(Pixel), MPI_BYTE, image, (HEIGHT / size) * WIDTH * sizeof(Pixel), MPI_BYTE, 0, MPI_COMM_WORLD);
 
-  write_bitmap("fractal.bmp", image);
+  // Save file
+  double t2 = MPI_Wtime();
+
+  if (rank == 0)
+  {
+    write_bitmap("fractal.bmp", image);
+  }
 
   // End
-  double t3 = omp_get_wtime();
+  double t3 = MPI_Wtime();
 
   free(image);
-  printf("Compute: %lfs, Savefile: %lf\n", t2-t1, t3-t2);
+  if (rank == 0)
+  {
+    printf("Compute: %lfs, Savefile: %lf\n", t2-t1, t3-t2);
+  }
+
+  MPI_Finalize();
 
   return 0;
 }
