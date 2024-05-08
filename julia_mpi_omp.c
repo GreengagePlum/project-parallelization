@@ -116,6 +116,22 @@ void write_bitmap(const char *filename, Pixel *image) {
     fclose(file);
 }
 
+void my_op(void *invec, void *inoutvec, int *len, MPI_Datatype *datatype)
+{
+  (void)datatype;
+  Pixel *in = (Pixel *)invec;
+  Pixel *inout = (Pixel *)inoutvec;
+  for (int i = 0; i < *len; i++)
+  {
+    for (int c = 0; c < WIDTH; c++)
+    {
+      inout[i * WIDTH + c].r |= in[i * WIDTH + c].r;
+      inout[i * WIDTH + c].g |= in[i * WIDTH + c].g;
+      inout[i * WIDTH + c].b |= in[i * WIDTH + c].b;
+    }
+  }
+}
+
 int main(int argc, char **argv)
 {
 
@@ -147,13 +163,14 @@ int main(int argc, char **argv)
   double cReal = -0.7;
   double cImag = 0.27015;
 
+  MPI_Datatype mpi_pixel_line;
+  MPI_Type_contiguous(WIDTH * sizeof(Pixel), MPI_BYTE, &mpi_pixel_line);
+  MPI_Type_commit(&mpi_pixel_line);
+
   // Init
-  Pixel *image = (Pixel *)malloc(WIDTH * HEIGHT * sizeof(Pixel));
+  Pixel *image = (Pixel *)calloc(WIDTH * HEIGHT, sizeof(Pixel));
   if (!image) {
-    if (rank == 0)
-    {
-    printf("Error: Unable to allocate memory\n");
-    }
+    printf("Error process %d: Unable to allocate memory\n", rank);
     MPI_Finalize();
     return 1;
   }
@@ -171,9 +188,9 @@ int main(int argc, char **argv)
     }
   }
 
-  // Gather image data onto the master process
-  // MPI_Gather(rank == 0 ? MPI_IN_PLACE : image, WIDTH * HEIGHT / size, MPI_UNSIGNED_CHAR, image, WIDTH * HEIGHT / size, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
-  MPI_Gather(image + rank * (HEIGHT / size) * WIDTH, (HEIGHT / size) * WIDTH * sizeof(Pixel), MPI_BYTE, image, (HEIGHT / size) * WIDTH * sizeof(Pixel), MPI_BYTE, 0, MPI_COMM_WORLD);
+  MPI_Op op;
+  MPI_Op_create(my_op, 1, &op);
+  MPI_Reduce(rank == 0 ? MPI_IN_PLACE : image, image, HEIGHT, mpi_pixel_line, op, 0, MPI_COMM_WORLD);
 
   // Save file
   double t2 = MPI_Wtime();
